@@ -43,16 +43,29 @@
       color: black;
       font-weight: bold;
     }
+    @media (max-width: 768px) {
+      canvas {
+        width: 100%;
+        height: auto;
+      }
+      #startButton {
+        font-size: 18px;
+        padding: 8px 16px;
+      }
+      #timer {
+        font-size: 18px;
+      }
+    }
+    @media (hover: none) {
+      #startButton {
+        cursor: default;
+      }
+    }
   </style>
 </head>
 <body>
-  <!-- Tombol Mulai -->
   <button id="startButton">Mulai Game</button>
-
-  <!-- Canvas untuk Game -->
-  <canvas id="gameCanvas" width="800" height="600"></canvas>
-
-  <!-- Timer -->
+  <canvas id="gameCanvas"></canvas>
   <div id="timer">Waktu Bermain: 00:00:00</div>
 
   <script>
@@ -61,7 +74,6 @@
     const timerDisplay = document.getElementById('timer');
     const startButton = document.getElementById('startButton');
 
-    // Pemain
     const player = {
       x: canvas.width / 2,
       y: canvas.height / 2,
@@ -73,29 +85,27 @@
       dy: 0
     };
 
-    // Pengaturan
     const game = {
       isRunning: false,
       enemies: [],
-      maxEnemies: 10,
-      startTime: 0,  // Menyimpan waktu mulai permainan
-      duration: 0  // Durasi waktu permainan
+      maxEnemies: 3,
+      enemySpeedMultiplier: 1,
+      startTime: 0,
+      duration: 0
     };
 
-    // Enemy
     function createEnemy() {
       const enemy = {
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
         width: 30,
         height: 30,
-        speed: 2 + Math.random() * 2, // kecepatan acak
+        speed: (2 + Math.random() * 2) * game.enemySpeedMultiplier,
         color: 'red'
       };
       game.enemies.push(enemy);
     }
 
-    // Update posisi pemain
     function updatePlayer() {
       player.x += player.dx;
       player.y += player.dy;
@@ -106,13 +116,10 @@
       if (player.y > canvas.height - player.height) player.y = canvas.height - player.height;
     }
 
-    // Update posisi musuh
     function updateEnemies() {
       game.enemies.forEach((enemy, index) => {
-        enemy.x += (player.x - enemy.x) * 0.02;
-        enemy.y += (player.y - enemy.y) * 0.02;
-
-        // Jika musuh keluar dari canvas
+        enemy.x += (player.x - enemy.x) * 0.02 * enemy.speed / 3;
+        enemy.y += (player.y - enemy.y) * 0.02 * enemy.speed / 3;
         if (enemy.x < 0 || enemy.x > canvas.width || enemy.y < 0 || enemy.y > canvas.height) {
           game.enemies.splice(index, 1);
           createEnemy();
@@ -120,55 +127,69 @@
       });
     }
 
-    // Deteksi tumbukan dengan musuh
     function detectCollisions() {
-      game.enemies.forEach((enemy, index) => {
-        if (player.x < enemy.x + enemy.width &&
-            player.x + player.width > enemy.x &&
-            player.y < enemy.y + enemy.height &&
-            player.y + player.height > enemy.y) {
+      game.enemies.forEach(enemy => {
+        if (
+          player.x < enemy.x + enemy.width &&
+          player.x + player.width > enemy.x &&
+          player.y < enemy.y + enemy.height &&
+          player.y + player.height > enemy.y
+        ) {
           game.isRunning = false;
           alert('Game Over!');
         }
       });
     }
 
-    // Gambar objek
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Gambar pemain
+
       ctx.fillStyle = player.color;
       ctx.fillRect(player.x, player.y, player.width, player.height);
 
-      // Gambar musuh
       game.enemies.forEach(enemy => {
         ctx.fillStyle = enemy.color;
         ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
       });
     }
 
-    // Update timer
     function updateTimer() {
       if (!game.isRunning) return;
-      game.duration = Math.floor((Date.now() - game.startTime) / 1000); // Waktu dalam detik
+
+      const now = Date.now();
+      game.duration = Math.floor((now - game.startTime) / 1000);
       const hours = Math.floor(game.duration / 3600);
       const minutes = Math.floor((game.duration % 3600) / 60);
       const seconds = game.duration % 60;
 
-      // Format waktu (HH:MM:SS)
       timerDisplay.textContent = `Waktu Bermain: ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+      if (game.duration % 60 === 0 && game.duration > 0) {
+        addNewEnemy();
+        increaseEnemySpeed();
+      }
     }
 
-    // Fungsi untuk menambahkan angka 0 di depan (misalnya 01, 02)
     function pad(num) {
       return num < 10 ? '0' + num : num;
     }
 
-    // Update dan gambar semuanya
+    function addNewEnemy() {
+      if (game.enemies.length < game.maxEnemies + 10) {
+        createEnemy();
+      }
+    }
+
+    function increaseEnemySpeed() {
+      game.enemySpeedMultiplier += 0.05;
+      game.enemies.forEach(enemy => {
+        enemy.speed *= 1.05;
+      });
+    }
+
     function gameLoop() {
       if (!game.isRunning) return;
-      
+
       updatePlayer();
       updateEnemies();
       detectCollisions();
@@ -177,35 +198,36 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // Kontrol pemain
-    window.addEventListener('keydown', function(e) {
-      if (e.key === 'ArrowUp') player.dy = -player.speed;
-      if (e.key === 'ArrowDown') player.dy = player.speed;
-      if (e.key === 'ArrowLeft') player.dx = -player.speed;
-      if (e.key === 'ArrowRight') player.dx = player.speed;
+    canvas.addEventListener('touchstart', e => {
+      const touch = e.touches[0];
+      player.x = touch.clientX - canvas.offsetLeft - player.width / 2;
+      player.y = touch.clientY - canvas.offsetTop - player.height / 2;
     });
 
-    window.addEventListener('keyup', function(e) {
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player.dy = 0;
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.dx = 0;
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      player.x = touch.clientX - canvas.offsetLeft - player.width / 2;
+      player.y = touch.clientY - canvas.offsetTop - player.height / 2;
     });
 
-    // Mulai game
-    function startGame() {
+    function resizeCanvas() {
+      canvas.width = window.innerWidth * 0.9;
+      canvas.height = window.innerHeight * 0.7;
+      player.x = canvas.width / 2;
+      player.y = canvas.height / 2;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    startButton.addEventListener('click', () => {
       game.isRunning = true;
       game.startTime = Date.now();
-      game.duration = 0;  // Reset waktu permainan
-      game.enemies = [];  // Reset musuh
-      createEnemy();
-      createEnemy();
-      createEnemy();
-      startButton.style.display = 'none';  // Sembunyikan tombol mulai
+      game.enemies = [];
+      for (let i = 0; i < game.maxEnemies; i++) createEnemy();
+      startButton.style.display = 'none';
       gameLoop();
-    }
-
-    // Menampilkan tombol mulai
-    startButton.addEventListener('click', startGame);
-
+    });
   </script>
 </body>
 </html>
