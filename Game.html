@@ -88,7 +88,6 @@
     const game = {
       isRunning: false,
       enemies: [],
-      maxEnemies: 3,
       enemySpeedMultiplier: 1,
       startTime: 0,
       duration: 0
@@ -100,10 +99,19 @@
         y: Math.random() * canvas.height,
         width: 30,
         height: 30,
-        speed: (2 + Math.random() * 2) * game.enemySpeedMultiplier,
+        baseSpeed: 2 + Math.random() * 2,
+        speed: 0,
         color: 'red'
       };
+      enemy.speed = enemy.baseSpeed * game.enemySpeedMultiplier;
       game.enemies.push(enemy);
+    }
+
+    function initializeEnemies() {
+      game.enemies = [];
+      for (let i = 0; i < 5; i++) {
+        createEnemy();
+      }
     }
 
     function updatePlayer() {
@@ -118,12 +126,18 @@
 
     function updateEnemies() {
       game.enemies.forEach((enemy, index) => {
-        enemy.x += (player.x - enemy.x) * 0.02 * enemy.speed / 3;
-        enemy.y += (player.y - enemy.y) * 0.02 * enemy.speed / 3;
-        if (enemy.x < 0 || enemy.x > canvas.width || enemy.y < 0 || enemy.y > canvas.height) {
-          game.enemies.splice(index, 1);
-          createEnemy();
-        }
+        const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+        const speedFactor = enemy.speed;
+
+        // Update posisi musuh berdasarkan sudut arah (angle)
+        enemy.x += Math.cos(angle) * speedFactor;
+        enemy.y += Math.sin(angle) * speedFactor;
+
+        // Pastikan musuh tidak keluar layar
+        if (enemy.x < 0) enemy.x = 0;
+        if (enemy.x > canvas.width - enemy.width) enemy.x = canvas.width - enemy.width;
+        if (enemy.y < 0) enemy.y = 0;
+        if (enemy.y > canvas.height - enemy.height) enemy.y = canvas.height - enemy.height;
       });
     }
 
@@ -165,7 +179,6 @@
       timerDisplay.textContent = `Waktu Bermain: ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 
       if (game.duration % 60 === 0 && game.duration > 0) {
-        addNewEnemy();
         increaseEnemySpeed();
       }
     }
@@ -174,16 +187,10 @@
       return num < 10 ? '0' + num : num;
     }
 
-    function addNewEnemy() {
-      if (game.enemies.length < game.maxEnemies + 10) {
-        createEnemy();
-      }
-    }
-
     function increaseEnemySpeed() {
-      game.enemySpeedMultiplier += 0.05;
+      game.enemySpeedMultiplier += 0.1;
       game.enemies.forEach(enemy => {
-        enemy.speed *= 1.05;
+        enemy.speed = enemy.baseSpeed * game.enemySpeedMultiplier;
       });
     }
 
@@ -223,8 +230,7 @@
     startButton.addEventListener('click', () => {
       game.isRunning = true;
       game.startTime = Date.now();
-      game.enemies = [];
-      for (let i = 0; i < game.maxEnemies; i++) createEnemy();
+      initializeEnemies();
       startButton.style.display = 'none';
       gameLoop();
     });
