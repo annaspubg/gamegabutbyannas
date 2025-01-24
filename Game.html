@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Game Pasangan Angka dan Huruf</title>
+  <title>Game Angka Muter</title>
   <style>
     body {
       margin: 0;
@@ -17,26 +17,23 @@
       flex-direction: column;
       text-align: center;
     }
-    #gameGrid {
-      display: grid;
-      gap: 5px;
+    #slotContainer {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
       margin: 20px 0;
     }
-    .cell {
-      width: 50px;
-      height: 50px;
+    .slot {
+      width: 80px;
+      height: 80px;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 24px;
+      font-size: 32px;
       font-weight: bold;
       background-color: #ADD8E6;
-      cursor: pointer;
-      border-radius: 5px;
-      border: 1px solid #000;
-    }
-    .cell:hover {
-      background-color: #87CEFA;
+      border-radius: 10px;
+      border: 2px solid #000;
     }
     #startButton {
       font-size: 24px;
@@ -45,7 +42,7 @@
       color: white;
       border: none;
       cursor: pointer;
-      margin-bottom: 10px;
+      margin-top: 20px;
       border-radius: 5px;
     }
     #startButton:hover {
@@ -57,119 +54,77 @@
       font-weight: bold;
       color: #333;
     }
-    @media (max-width: 768px) {
-      #gameGrid {
-        gap: 3px;
-      }
-      .cell {
-        width: 40px;
-        height: 40px;
-        font-size: 20px;
-      }
-      #startButton {
-        font-size: 18px;
-        padding: 8px 16px;
-      }
-      #score {
-        font-size: 20px;
-      }
-    }
   </style>
 </head>
 <body>
-  <button id="startButton">Mulai Game</button>
-  <div id="gameGrid"></div>
+  <div id="slotContainer">
+    <div class="slot" id="slot1">A</div>
+    <div class="slot" id="slot2">1</div>
+    <div class="slot" id="slot3">B</div>
+    <div class="slot" id="slot4">2</div>
+    <div class="slot" id="slot5">C</div>
+  </div>
+  <button id="startButton">Mulai Acak</button>
   <div id="score">Skor: 0</div>
 
   <script>
+    const slots = document.querySelectorAll('.slot');
     const startButton = document.getElementById('startButton');
-    const gameGrid = document.getElementById('gameGrid');
     const scoreDisplay = document.getElementById('score');
-
-    const gridSize = 6; // Ukuran grid (6x6)
-    let grid = [];
-    let firstSelection = null;
     let score = 0;
+    let interval;
 
-    // Fungsi untuk menginisialisasi grid
-    function initializeGrid() {
-      grid = [];
-      gameGrid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-      gameGrid.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
-      gameGrid.innerHTML = '';
+    // Fungsi untuk memulai pengacakan
+    function startRandomization() {
+      clearInterval(interval);
 
-      const pairs = [];
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      const numbers = Array.from({ length: gridSize * gridSize / 2 }, (_, i) => i + 1);
+      const possibleValues = [
+        'A', 'B', 'C', 'D', 'E', 
+        '1', '2', '3', '4', '5'
+      ];
 
-      // Buat pasangan angka dan huruf
-      for (let i = 0; i < gridSize * gridSize / 2; i++) {
-        pairs.push(numbers[i]);
-        pairs.push(chars[i % chars.length]);
-      }
-
-      // Acak pasangan
-      pairs.sort(() => Math.random() - 0.5);
-
-      // Tambahkan pasangan ke grid
-      pairs.forEach((value, index) => {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.textContent = value;
-        cell.dataset.index = index;
-        gameGrid.appendChild(cell);
-        grid.push(value);
-      });
-
-      // Tambahkan event listener
-      document.querySelectorAll('.cell').forEach(cell => {
-        cell.addEventListener('click', handleCellClick);
-      });
+      interval = setInterval(() => {
+        slots.forEach(slot => {
+          const randomValue = possibleValues[Math.floor(Math.random() * possibleValues.length)];
+          slot.textContent = randomValue;
+        });
+      }, 100);
     }
 
-    // Fungsi ketika cell diklik
-    function handleCellClick(event) {
-      const cell = event.target;
-      const index = cell.dataset.index;
+    // Fungsi untuk menghentikan pengacakan setelah 5 detik
+    function stopRandomization() {
+      clearInterval(interval);
 
-      if (firstSelection === null) {
-        // Pilihan pertama
-        firstSelection = { index, value: grid[index], element: cell };
-        cell.style.backgroundColor = '#FFD700'; // Highlight pilihan
-      } else {
-        // Pilihan kedua
-        const secondSelection = { index, value: grid[index], element: cell };
+      // Hitung jumlah kemunculan tiap angka/huruf
+      const counts = {};
+      slots.forEach(slot => {
+        const value = slot.textContent;
+        counts[value] = (counts[value] || 0) + 1;
+      });
 
-        // Cek apakah pasangan cocok
-        if (isPair(firstSelection.value, secondSelection.value)) {
-          score++;
-          scoreDisplay.textContent = `Skor: ${score}`;
-          firstSelection.element.style.backgroundColor = '#32CD32'; // Warna hijau untuk pasangan benar
-          secondSelection.element.style.backgroundColor = '#32CD32';
-          firstSelection.element.style.pointerEvents = 'none'; // Nonaktifkan klik
-          secondSelection.element.style.pointerEvents = 'none';
-        } else {
-          firstSelection.element.style.backgroundColor = '#ADD8E6'; // Reset warna
-          cell.style.backgroundColor = '#ADD8E6';
+      // Cek apakah ada yang muncul minimal 5 kali
+      let foundMatch = false;
+      for (const value in counts) {
+        if (counts[value] >= 5) {
+          foundMatch = true;
+          score += 10; // Tambah skor
+          break;
         }
+      }
 
-        firstSelection = null; // Reset pilihan
+      scoreDisplay.textContent = `Skor: ${score}`;
+      if (!foundMatch) {
+        alert('Tidak ada angka/huruf yang muncul minimal 5 kali!');
       }
     }
 
-    // Fungsi untuk cek apakah pasangan cocok
-    function isPair(value1, value2) {
-      return (
-        (typeof value1 === 'number' && typeof value2 === 'string') ||
-        (typeof value2 === 'number' && typeof value1 === 'string')
-      );
-    }
-
-    // Mulai game
+    // Event listener tombol mulai
     startButton.addEventListener('click', () => {
-      score = 0;
-      scoreDisplay.textContent = `Skor: ${score}`;
-      initializeGrid();
+      startRandomization();
+
+      setTimeout(() => {
+        stopRandomization();
+      }, 5000); // Durasi pengacakan: 5 detik
     });
   </script>
 </body>
