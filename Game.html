@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Game Battle Royale Sederhana</title>
+  <title>Game Pasangan Angka dan Huruf</title>
   <style>
     body {
       margin: 0;
@@ -12,14 +12,31 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      background-color: #87CEEB;
+      background-color: #F0F8FF;
       font-family: Arial, sans-serif;
       flex-direction: column;
       text-align: center;
     }
-    canvas {
-      border: 2px solid #000;
-      background-color: #D3D3D3;
+    #gameGrid {
+      display: grid;
+      gap: 5px;
+      margin: 20px 0;
+    }
+    .cell {
+      width: 50px;
+      height: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      font-weight: bold;
+      background-color: #ADD8E6;
+      cursor: pointer;
+      border-radius: 5px;
+      border: 1px solid #000;
+    }
+    .cell:hover {
+      background-color: #87CEFA;
     }
     #startButton {
       font-size: 24px;
@@ -28,211 +45,131 @@
       color: white;
       border: none;
       cursor: pointer;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       border-radius: 5px;
     }
     #startButton:hover {
       background-color: #45a049;
     }
-    #timer {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
+    #score {
       font-size: 24px;
-      color: black;
+      margin-top: 20px;
       font-weight: bold;
+      color: #333;
     }
     @media (max-width: 768px) {
-      canvas {
-        width: 100%;
-        height: auto;
+      #gameGrid {
+        gap: 3px;
+      }
+      .cell {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
       }
       #startButton {
         font-size: 18px;
         padding: 8px 16px;
       }
-      #timer {
-        font-size: 18px;
-      }
-    }
-    @media (hover: none) {
-      #startButton {
-        cursor: default;
+      #score {
+        font-size: 20px;
       }
     }
   </style>
 </head>
 <body>
   <button id="startButton">Mulai Game</button>
-  <canvas id="gameCanvas"></canvas>
-  <div id="timer">Waktu Bermain: 00:00:00</div>
+  <div id="gameGrid"></div>
+  <div id="score">Skor: 0</div>
 
   <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const timerDisplay = document.getElementById('timer');
     const startButton = document.getElementById('startButton');
+    const gameGrid = document.getElementById('gameGrid');
+    const scoreDisplay = document.getElementById('score');
 
-    const player = {
-      x: canvas.width / 2,
-      y: canvas.height / 2,
-      width: 30,
-      height: 30,
-      speed: 5,
-      color: 'blue',
-      dx: 0,
-      dy: 0
-    };
+    const gridSize = 6; // Ukuran grid (6x6)
+    let grid = [];
+    let firstSelection = null;
+    let score = 0;
 
-    const game = {
-      isRunning: false,
-      enemies: [],
-      enemySpeedMultiplier: 1,
-      startTime: 0,
-      duration: 0
-    };
+    // Fungsi untuk menginisialisasi grid
+    function initializeGrid() {
+      grid = [];
+      gameGrid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+      gameGrid.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+      gameGrid.innerHTML = '';
 
-    function createEnemy() {
-      const enemy = {
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        width: 30,
-        height: 30,
-        baseSpeed: 2 + Math.random() * 2,
-        speed: 0,
-        color: 'red'
-      };
-      enemy.speed = enemy.baseSpeed * game.enemySpeedMultiplier;
-      game.enemies.push(enemy);
-    }
+      const pairs = [];
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const numbers = Array.from({ length: gridSize * gridSize / 2 }, (_, i) => i + 1);
 
-    function initializeEnemies() {
-      game.enemies = [];
-      for (let i = 0; i < 5; i++) {
-        createEnemy();
+      // Buat pasangan angka dan huruf
+      for (let i = 0; i < gridSize * gridSize / 2; i++) {
+        pairs.push(numbers[i]);
+        pairs.push(chars[i % chars.length]);
       }
-    }
 
-    function updatePlayer() {
-      player.x += player.dx;
-      player.y += player.dy;
+      // Acak pasangan
+      pairs.sort(() => Math.random() - 0.5);
 
-      if (player.x < 0) player.x = 0;
-      if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
-      if (player.y < 0) player.y = 0;
-      if (player.y > canvas.height - player.height) player.y = canvas.height - player.height;
-    }
+      // Tambahkan pasangan ke grid
+      pairs.forEach((value, index) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = value;
+        cell.dataset.index = index;
+        gameGrid.appendChild(cell);
+        grid.push(value);
+      });
 
-    function updateEnemies() {
-      game.enemies.forEach((enemy, index) => {
-        const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-        const speedFactor = enemy.speed;
-
-        // Update posisi musuh berdasarkan sudut arah (angle)
-        enemy.x += Math.cos(angle) * speedFactor;
-        enemy.y += Math.sin(angle) * speedFactor;
-
-        // Pastikan musuh tidak keluar layar
-        if (enemy.x < 0) enemy.x = 0;
-        if (enemy.x > canvas.width - enemy.width) enemy.x = canvas.width - enemy.width;
-        if (enemy.y < 0) enemy.y = 0;
-        if (enemy.y > canvas.height - enemy.height) enemy.y = canvas.height - enemy.height;
+      // Tambahkan event listener
+      document.querySelectorAll('.cell').forEach(cell => {
+        cell.addEventListener('click', handleCellClick);
       });
     }
 
-    function detectCollisions() {
-      game.enemies.forEach(enemy => {
-        if (
-          player.x < enemy.x + enemy.width &&
-          player.x + player.width > enemy.x &&
-          player.y < enemy.y + enemy.height &&
-          player.y + player.height > enemy.y
-        ) {
-          game.isRunning = false;
-          alert('Game Over!');
+    // Fungsi ketika cell diklik
+    function handleCellClick(event) {
+      const cell = event.target;
+      const index = cell.dataset.index;
+
+      if (firstSelection === null) {
+        // Pilihan pertama
+        firstSelection = { index, value: grid[index], element: cell };
+        cell.style.backgroundColor = '#FFD700'; // Highlight pilihan
+      } else {
+        // Pilihan kedua
+        const secondSelection = { index, value: grid[index], element: cell };
+
+        // Cek apakah pasangan cocok
+        if (isPair(firstSelection.value, secondSelection.value)) {
+          score++;
+          scoreDisplay.textContent = `Skor: ${score}`;
+          firstSelection.element.style.backgroundColor = '#32CD32'; // Warna hijau untuk pasangan benar
+          secondSelection.element.style.backgroundColor = '#32CD32';
+          firstSelection.element.style.pointerEvents = 'none'; // Nonaktifkan klik
+          secondSelection.element.style.pointerEvents = 'none';
+        } else {
+          firstSelection.element.style.backgroundColor = '#ADD8E6'; // Reset warna
+          cell.style.backgroundColor = '#ADD8E6';
         }
-      });
-    }
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = player.color;
-      ctx.fillRect(player.x, player.y, player.width, player.height);
-
-      game.enemies.forEach(enemy => {
-        ctx.fillStyle = enemy.color;
-        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-      });
-    }
-
-    function updateTimer() {
-      if (!game.isRunning) return;
-
-      const now = Date.now();
-      game.duration = Math.floor((now - game.startTime) / 1000);
-      const hours = Math.floor(game.duration / 3600);
-      const minutes = Math.floor((game.duration % 3600) / 60);
-      const seconds = game.duration % 60;
-
-      timerDisplay.textContent = `Waktu Bermain: ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-
-      if (game.duration % 60 === 0 && game.duration > 0) {
-        increaseEnemySpeed();
+        firstSelection = null; // Reset pilihan
       }
     }
 
-    function pad(num) {
-      return num < 10 ? '0' + num : num;
+    // Fungsi untuk cek apakah pasangan cocok
+    function isPair(value1, value2) {
+      return (
+        (typeof value1 === 'number' && typeof value2 === 'string') ||
+        (typeof value2 === 'number' && typeof value1 === 'string')
+      );
     }
 
-    function increaseEnemySpeed() {
-      game.enemySpeedMultiplier += 0.1;
-      game.enemies.forEach(enemy => {
-        enemy.speed = enemy.baseSpeed * game.enemySpeedMultiplier;
-      });
-    }
-
-    function gameLoop() {
-      if (!game.isRunning) return;
-
-      updatePlayer();
-      updateEnemies();
-      detectCollisions();
-      draw();
-      updateTimer();
-      requestAnimationFrame(gameLoop);
-    }
-
-    canvas.addEventListener('touchstart', e => {
-      const touch = e.touches[0];
-      player.x = touch.clientX - canvas.offsetLeft - player.width / 2;
-      player.y = touch.clientY - canvas.offsetTop - player.height / 2;
-    });
-
-    canvas.addEventListener('touchmove', e => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      player.x = touch.clientX - canvas.offsetLeft - player.width / 2;
-      player.y = touch.clientY - canvas.offsetTop - player.height / 2;
-    });
-
-    function resizeCanvas() {
-      canvas.width = window.innerWidth * 0.9;
-      canvas.height = window.innerHeight * 0.7;
-      player.x = canvas.width / 2;
-      player.y = canvas.height / 2;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
+    // Mulai game
     startButton.addEventListener('click', () => {
-      game.isRunning = true;
-      game.startTime = Date.now();
-      initializeEnemies();
-      startButton.style.display = 'none';
-      gameLoop();
+      score = 0;
+      scoreDisplay.textContent = `Skor: ${score}`;
+      initializeGrid();
     });
   </script>
 </body>
