@@ -5,126 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Game Angka Muter</title>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #F0F8FF;
-      font-family: Arial, sans-serif;
-      flex-direction: column;
-      text-align: center;
-    }
-    #slotContainer {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin: 20px 0;
-    }
-    .slot {
-      width: 80px;
-      height: 80px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 32px;
-      font-weight: bold;
-      background-color: #ADD8E6;
-      border-radius: 10px;
-      border: 2px solid #000;
-    }
-    #startButton {
-      font-size: 24px;
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-      margin-top: 20px;
-      border-radius: 5px;
-    }
-    #startButton:hover {
-      background-color: #45a049;
-    }
-    #score {
-      font-size: 24px;
-      margin-top: 20px;
-      font-weight: bold;
-      color: #333;
-    }
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #F0F8FF; font-family: Arial, sans-serif; }
+    #slotContainer { display: flex; gap: 10px; margin-bottom: 20px; }
+    .slot { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; background: #ADD8E6; border: 2px solid #000; border-radius: 5px; }
+    button { padding: 10px 20px; font-size: 18px; background: #4CAF50; color: #FFF; border: none; cursor: pointer; border-radius: 5px; }
+    button:hover { background: #45A049; }
+    #score { margin-top: 20px; font-size: 20px; }
   </style>
 </head>
 <body>
   <div id="slotContainer">
     <div class="slot" id="slot1">A</div>
-    <div class="slot" id="slot2">1</div>
-    <div class="slot" id="slot3">B</div>
-    <div class="slot" id="slot4">2</div>
-    <div class="slot" id="slot5">C</div>
+    <div class="slot" id="slot2">B</div>
+    <div class="slot" id="slot3">C</div>
   </div>
-  <button id="startButton">Mulai Acak</button>
+  <button id="startButton">Mulai</button>
   <div id="score">Skor: 0</div>
 
   <script>
     const slots = document.querySelectorAll('.slot');
     const startButton = document.getElementById('startButton');
     const scoreDisplay = document.getElementById('score');
-    let score = 0;
-    let interval;
+    let score = 0, spinCount = 0, interval;
 
-    // Fungsi untuk memulai pengacakan
-    function startRandomization() {
-      clearInterval(interval);
+    const possibleValues = ['A', 'B', 'C', '1', '2', '3'];
 
-      const possibleValues = [
-        'A', 'B', 'C', 'D', 'E', 
-        '1', '2', '3', '4', '5'
-      ];
-
-      interval = setInterval(() => {
-        slots.forEach(slot => {
-          const randomValue = possibleValues[Math.floor(Math.random() * possibleValues.length)];
-          slot.textContent = randomValue;
-        });
-      }, 100);
-    }
-
-    // Fungsi untuk menghentikan pengacakan setelah 5 detik
-    function stopRandomization() {
-      clearInterval(interval);
-
-      // Hitung jumlah kemunculan tiap angka/huruf
-      const counts = {};
+    function randomizeSlots() {
       slots.forEach(slot => {
-        const value = slot.textContent;
-        counts[value] = (counts[value] || 0) + 1;
+        const randomValue = possibleValues[Math.floor(Math.random() * possibleValues.length)];
+        slot.textContent = randomValue;
       });
+    }
 
-      // Cek apakah ada yang muncul minimal 5 kali
-      let foundMatch = false;
-      for (const value in counts) {
-        if (counts[value] >= 5) {
-          foundMatch = true;
-          score += 10; // Tambah skor
-          break;
-        }
-      }
-
-      scoreDisplay.textContent = `Skor: ${score}`;
-      if (!foundMatch) {
-        alert('Tidak ada angka/huruf yang muncul minimal 5 kali!');
+    function checkForMatch() {
+      const values = Array.from(slots).map(slot => slot.textContent);
+      if (values.every(val => val === values[0])) {
+        score += 10;
+        scoreDisplay.textContent = `Skor: ${score}`;
       }
     }
 
-    // Event listener tombol mulai
     startButton.addEventListener('click', () => {
-      startRandomization();
-
-      setTimeout(() => {
-        stopRandomization();
-      }, 5000); // Durasi pengacakan: 5 detik
+      spinCount = 0;
+      interval = setInterval(() => {
+        randomizeSlots();
+        spinCount++;
+        if (spinCount === 3) {
+          clearInterval(interval);
+          checkForMatch();
+        }
+      }, 1000); // Setiap putaran berlangsung 1 detik
     });
   </script>
 </body>
