@@ -5,57 +5,121 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Game Angka Muter</title>
   <style>
-    body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #F0F8FF; font-family: Arial, sans-serif; }
-    #slotContainer { display: flex; gap: 10px; margin-bottom: 20px; }
-    .slot { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; background: #ADD8E6; border: 2px solid #000; border-radius: 5px; }
-    button { padding: 10px 20px; font-size: 18px; background: #4CAF50; color: #FFF; border: none; cursor: pointer; border-radius: 5px; }
-    button:hover { background: #45A049; }
-    #score { margin-top: 20px; font-size: 20px; }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #F0F8FF;
+      font-family: Arial, sans-serif;
+    }
+    #slotContainer {
+      display: grid;
+      grid-template-columns: repeat(250, 20px);
+      gap: 2px;
+      overflow: auto;
+      height: 80%;
+      border: 1px solid #000;
+    }
+    .slot {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      background: #ADD8E6;
+      border-radius: 2px;
+      font-weight: bold;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: #45A049;
+    }
+    #score {
+      margin-top: 10px;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
-  <div id="slotContainer">
-    <div class="slot" id="slot1">A</div>
-    <div class="slot" id="slot2">B</div>
-    <div class="slot" id="slot3">C</div>
-  </div>
+  <div id="slotContainer"></div>
   <button id="startButton">Mulai</button>
   <div id="score">Skor: 0</div>
 
   <script>
-    const slots = document.querySelectorAll('.slot');
+    const rows = 50;
+    const cols = 250;
+    const possibleValues = ['A', 'B', 'C', 'D', 'E', '1', '2', '3', '4', '5'];
+    const slotContainer = document.getElementById('slotContainer');
     const startButton = document.getElementById('startButton');
     const scoreDisplay = document.getElementById('score');
-    let score = 0, spinCount = 0, interval;
+    let slots = [];
+    let score = 0;
 
-    const possibleValues = ['A', 'B', 'C', '1', '2', '3'];
-
-    function randomizeSlots() {
-      slots.forEach(slot => {
-        const randomValue = possibleValues[Math.floor(Math.random() * possibleValues.length)];
-        slot.textContent = randomValue;
-      });
-    }
-
-    function checkForMatch() {
-      const values = Array.from(slots).map(slot => slot.textContent);
-      if (values.every(val => val === values[0])) {
-        score += 10;
-        scoreDisplay.textContent = `Skor: ${score}`;
+    // Membuat slot grid
+    function createSlots() {
+      slotContainer.innerHTML = '';
+      slots = [];
+      for (let i = 0; i < rows * cols; i++) {
+        const slot = document.createElement('div');
+        slot.classList.add('slot');
+        slot.textContent = possibleValues[Math.floor(Math.random() * possibleValues.length)];
+        slotContainer.appendChild(slot);
+        slots.push(slot);
       }
     }
 
+    // Mengacak slot
+    function randomizeSlots() {
+      slots.forEach(slot => {
+        slot.textContent = possibleValues[Math.floor(Math.random() * possibleValues.length)];
+      });
+    }
+
+    // Mengecek apakah ada angka/huruf yang sama minimal 5 kali
+    function checkForMatch() {
+      const counts = {};
+      slots.forEach(slot => {
+        const value = slot.textContent;
+        counts[value] = (counts[value] || 0) + 1;
+      });
+
+      for (const key in counts) {
+        if (counts[key] >= 5) {
+          score += 10;
+          scoreDisplay.textContent = `Skor: ${score}`;
+          return; // Skor hanya bertambah sekali per putaran
+        }
+      }
+    }
+
+    // Logika putaran
     startButton.addEventListener('click', () => {
-      spinCount = 0;
-      interval = setInterval(() => {
+      let spinCount = 0;
+      const interval = setInterval(() => {
         randomizeSlots();
         spinCount++;
         if (spinCount === 3) {
           clearInterval(interval);
           checkForMatch();
         }
-      }, 1000); // Setiap putaran berlangsung 1 detik
+      }, 1000);
     });
+
+    // Inisialisasi slot
+    createSlots();
   </script>
 </body>
 </html>
