@@ -17,22 +17,24 @@
     }
     #slotContainer {
       display: grid;
-      grid-template-columns: repeat(250, 20px);
-      gap: 2px;
-      overflow: auto;
-      height: 80%;
-      border: 1px solid #000;
+      grid-template-columns: repeat(10, 40px);
+      gap: 5px;
+      margin-bottom: 20px;
     }
     .slot {
-      width: 20px;
-      height: 20px;
+      width: 40px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      background: #ADD8E6;
-      border-radius: 2px;
+      font-size: 16px;
       font-weight: bold;
+      background: #ADD8E6;
+      border-radius: 5px;
+    }
+    .highlight {
+      background: red;
+      color: white;
     }
     button {
       padding: 10px 20px;
@@ -59,20 +61,19 @@
   <div id="score">Skor: 0</div>
 
   <script>
-    const rows = 50;
-    const cols = 250;
+    const totalSlots = 50;
     const possibleValues = ['A', 'B', 'C', 'D', 'E', '1', '2', '3', '4', '5'];
     const slotContainer = document.getElementById('slotContainer');
     const startButton = document.getElementById('startButton');
     const scoreDisplay = document.getElementById('score');
-    let slots = [];
     let score = 0;
+    let slots = [];
 
     // Membuat slot grid
     function createSlots() {
       slotContainer.innerHTML = '';
       slots = [];
-      for (let i = 0; i < rows * cols; i++) {
+      for (let i = 0; i < totalSlots; i++) {
         const slot = document.createElement('div');
         slot.classList.add('slot');
         slot.textContent = possibleValues[Math.floor(Math.random() * possibleValues.length)];
@@ -84,11 +85,12 @@
     // Mengacak slot
     function randomizeSlots() {
       slots.forEach(slot => {
+        slot.classList.remove('highlight'); // Reset warna
         slot.textContent = possibleValues[Math.floor(Math.random() * possibleValues.length)];
       });
     }
 
-    // Mengecek apakah ada angka/huruf yang sama minimal 5 kali
+    // Mengecek angka/huruf yang cocok
     function checkForMatch() {
       const counts = {};
       slots.forEach(slot => {
@@ -96,12 +98,22 @@
         counts[value] = (counts[value] || 0) + 1;
       });
 
+      // Highlight angka/huruf yang cocok minimal 5 kali
+      let matchFound = false;
       for (const key in counts) {
         if (counts[key] >= 5) {
-          score += 10;
-          scoreDisplay.textContent = `Skor: ${score}`;
-          return; // Skor hanya bertambah sekali per putaran
+          matchFound = true;
+          slots.forEach(slot => {
+            if (slot.textContent === key) {
+              slot.classList.add('highlight');
+            }
+          });
         }
+      }
+
+      if (matchFound) {
+        score += 10;
+        scoreDisplay.textContent = `Skor: ${score}`;
       }
     }
 
